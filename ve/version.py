@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+MAJOR_VERSION = 0
+MINOR_VERSION = 1
+PYVIRUSEVASION_VERSION = "VirusEvasion v%d.%d" % (MAJOR_VERSION, MINOR_VERSION)
