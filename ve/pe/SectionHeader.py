@@ -60,7 +60,8 @@ class SectionHeader(Structure):
             'Name', 'VirtualSize', 'VirtualAddress', 'SizeOfRawData', 'PointerToRawData', 'PointerToRelocations',
             'PointerToLinenumbers', 'NumberOfRelocations', 'NumberOfLinenumbers', 'Characteristics'
         ]
-        self.dataDirectories = []
+        self.dataDirectories = None
+        self.loaderIrrelvantRange = None
 
     def parse(self, data, fp):
         (self.Name, self.VirtualSize, self.VirtualAddress, self.SizeOfRawData, self.PointerToRawData, self.PointerToRelocations, self.PointerToLinenumbers,
@@ -76,17 +77,14 @@ class SectionHeader(Structure):
 
     def set_bytes_at_offset(self, offset, data):
         if len(data) > self.SizeOfRawData - offset:
-            self.modifyMsgs.append('Setting {num:d} bytes at offset {offset} of {section} Section failed: no enough space'.format(num=len(data), offset=offset, section=self.Name))
+            self.modifyMsgs.append('Setting {num:d} bytes at offset {offset:X} of {section} Section failed: no enough space'.format(num=len(data), offset=offset, section=self.Name))
         else:
             old_data = self.SectionData[offset:offset + len(data)]
-            self.modifyMsgs.append('Setting {num:d} bytes at offset {offset} of {section} Section: {old} -> {new}'.format(num=len(data), offset=offset, section=self.Name, old=old_data.encode('hex'), new=data.encode('hex')))
+            self.modifyMsgs.append('Setting {num:d} bytes at offset {offset:X} of {section} Section: {old} -> {new}'.format(num=len(data), offset=offset, section=self.Name, old=old_data.encode('hex'), new=data.encode('hex')))
             self.SectionData = self.SectionData[:offset] + data + self.SectionData[offset + len(data):]
 
     def is_data_section(self):
-        return self.Characteristics & SectionHeader.IMAGE_SCN_MEM_WRITE == 1 and self.Characteristics & SectionHeader.IMAGE_SCN_MEM_READ == 1 and self.Characteristics & SectionHeader.IMAGE_SCN_CNT_INITIALIZED_DATA == 1
-
-    def get_loader_irrelvant_range(self):
-        return []
+        return 0xC0000040 == self.Characteristics & (SectionHeader.IMAGE_SCN_MEM_WRITE | SectionHeader.IMAGE_SCN_MEM_READ | SectionHeader.IMAGE_SCN_CNT_INITIALIZED_DATA)
 
     def get_bytes_at_offset(self, offset, size):
         assert offset < self.SizeOfRawData, 'Offset {offset:X} exceeds {name} Section'.format(offset=offset, name=self.Name)

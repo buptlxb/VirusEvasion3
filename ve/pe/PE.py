@@ -2,11 +2,14 @@
 import os
 import mmap
 import struct
+import importlib
 
 from PEException import *
 from SectionHeader import SectionHeader
 from Structure import Structure
 from DataDirectory import DataDirectory
+from BaseRelocationDirectory import BaseRelocationDirectoryTableEntry
+
 
 
 class PE(Structure):
@@ -154,9 +157,15 @@ class PE(Structure):
         size = struct.calcsize(PE.OPTIONAL_HEADER_FORMAT)
         fp += size
 
+        class_names = {PE.DATA_DIRECTORY_DICT['DATA_DIRECTORY_BASE_RELOCATION']: 'BaseRelocationDirectory'}
         for i in range(self.NumberOfRvaAndSizes):
             data_directory = DataDirectory()
             fp = data_directory.parse(self.data, fp)
+            class_name = class_names.get(i, None)
+            if class_name is not None:
+                m = importlib.import_module('ve.pe.{0}'.format(class_name))
+                c = getattr(m, class_name)
+                data_directory.info = c(data_directory)
             self.DataDirectories.append(data_directory)
         size += struct.calcsize(DataDirectory.DATA_DIRECTORY_FORMAT) * self.NumberOfRvaAndSizes
         pending_msg += ' {size:d} bytes done'.format(size=size)
@@ -173,11 +182,22 @@ class PE(Structure):
         self.parseMsgs.append(pending_msg)
         return fp
 
+    def __parse_data_directory(self):
+        for section_header in self.SectionHeaders:
+            section_header.dataDirectories = [x for x in self.DataDirectories if section_header.VirtualAddress <= x.RVA and section_header.VirtualAddress + section_header.VirtualSize >= x.RVA + x.Size]
+            for dd in section_header.dataDirectories:
+                dd.section = section_header
+                if dd.info is not None:
+                    dd.info.parse(self.data, self.rva2fp(dd.RVA))
+
     def parse(self):
+        # base parser
         fp = self.__parse_dos_header()
         fp = self.__parse_coff_header(fp)
         fp = self.__parse_optional_header(fp)
         fp = self.__parse_section_header(fp)
+        # re-parser
+        self.__parse_data_directory()
 
         return fp
 
@@ -283,7 +303,7 @@ class PE(Structure):
             return None
 
     def get_data_sections(self):
-        return [sh for sh in self.SectionHeaders if sh.is_data_section]
+        return [sh for sh in self.SectionHeaders if sh.is_data_section()]
 
     def dump_modify_msgs(self):
         for msg in self.modifyMsgs:
@@ -293,6 +313,39 @@ class PE(Structure):
         for dd in self.DataDirectories:
             dd.dump_modify_msgs()
 
+    def get_loader_irrelvant_range(self, sh):
+        if sh.loaderIrrelvantRange is None:
+            assert self.SectionAlignment == 0x1000, 'Section Alignment is not 0x1000'
+            base_relocation_directory = self.DataDirectories[PE.DATA_DIRECTORY_DICT['DATA_DIRECTORY_BASE_RELOCATION']].info
+            fixup_rva = [block.PageRVA + BaseRelocationDirectoryTableEntry.offset(item)
+                         for block in base_relocation_directory.entrys if sh.VirtualAddress <= block.PageRVA < sh.VirtualAddress + sh.VirtualSize
+                         for item in block.items if item != 0]
+            fixup_rva.sort()
+            lirange = [[sh.VirtualAddress, sh.VirtualSize]]
+            for rva in fixup_rva:
+                for i in range(len(lirange)):
+                    start = lirange[i][0]
+                    size = lirange[i][1]
+                    if start < rva < start + size:
+                        lirange[i][1] = rva - start
+                        if size > 4:
+                            new_start = rva + 4
+                            new_size = start + size - new_start
+                            lirange.append([new_start, new_size])
+                        break
+                    elif start == rva:
+                        if size > 4:
+                            lirange[i][0] += 4
+                            lirange[i][1] -= 4
+                        elif size == 4:
+                            del lirange[i]
+                        else:
+                            print "Warning: loader irrelevant range size is less than 4."
+                        break
+            sh.loaderIrrelvantRange = lirange
+
+        return sh.loaderIrrelvantRange
+
 if __name__ == "__main__":
     pe = PE(r'C:\Users\ICT-LXB\Desktop\asm-test\hello\hello.EXE')
 
@@ -301,8 +354,5 @@ if __name__ == "__main__":
     pe.write(r'C:\Users\ICT-LXB\Desktop\asm-test\hello\tmp.EXE')
     pe.dump_modify_msgs()
 
-    from BaseRelocationDirectory import BaseRelocationDirectory
-    ddbr = pe.DataDirectories[PE.DATA_DIRECTORY_DICT['DATA_DIRECTORY_BASE_RELOCATION']]
-    brd = BaseRelocationDirectory(ddbr)
-    brd.parse(pe.data, pe.rva2fp(ddbr.RVA))
-    print brd
+    print pe.DataDirectories[PE.DATA_DIRECTORY_DICT['DATA_DIRECTORY_BASE_RELOCATION']].info
+    print pe.get_loader_irrelvant_range(pe.SectionHeaders[0])

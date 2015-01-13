@@ -12,6 +12,7 @@ class DataDirectory(Structure):
         self.Size = None
         self.majorAttributes = ['RVA', 'Size']
         self.section = None
+        self.info = None
 
     def parse(self, data, fp):
         (self.RVA, self.Size) = struct.unpack_from(DataDirectory.DATA_DIRECTORY_FORMAT, data, fp)

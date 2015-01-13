@@ -30,10 +30,22 @@ class BaseRelocationDirectoryTableEntry(Structure):
     def __str__(self):
         s = ['{RVA:X} RVA, {Size:8X} SizeOfBlock\n'.format(RVA=self.PageRVA, Size=self.BlockSize)]
         s.extend([' {Offset:3X}  {Type:<17s}  {Value:08X}\n'.format(
-            Offset=x & BaseRelocationDirectoryTableEntry.OFFSET_MASK,
-            Type=BaseRelocationDirectoryTableEntry.RELOCATION_TYPE[x >> BaseRelocationDirectoryTableEntry.OFFSET_BITS_NUM],
+            Offset=BaseRelocationDirectoryTableEntry.offset(x),
+            Type=BaseRelocationDirectoryTableEntry.type_str(x),
             Value=0) for x in self.items])
         return ''.join(s)
+
+    @staticmethod
+    def offset(item):
+        return item & BaseRelocationDirectoryTableEntry.OFFSET_MASK
+
+    @staticmethod
+    def type(item):
+        return item >> BaseRelocationDirectoryTableEntry.OFFSET_BITS_NUM
+
+    @staticmethod
+    def type_str(item):
+        return BaseRelocationDirectoryTableEntry.RELOCATION_TYPE[BaseRelocationDirectoryTableEntry.type(item)]
 
 
 class BaseRelocationDirectory(Structure):

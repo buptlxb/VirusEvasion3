@@ -23,7 +23,6 @@ class Core():
         print '[+] Obfuscation completed.'
         self.__binary.write(self.__options.output)
         print '[+] Writing new PE completed.'
-
         return True
 
     def __obfuscate_entry(self):
@@ -58,17 +57,18 @@ class Core():
                 continue
             start = data_sh.SectionData.index(boundary)
             data_sh.set_bytes_at_offset(start + struct.calcsize('<I'), struct.pack('<I', 0))
-            lirange = data_sh.get_loader_irrelvant_range()
-            data_size = self.__write_range(data_sh, lirange)
-            self.__encrypt_section(data_sh, lambda x: x ^ 0xffffffff)
+
+            data_size = self.__write_range(data_sh, start + struct.calcsize('< 2I'))
+            self.__encrypt_section(data_sh, lambda x: x ^ 0xff)
             break
         else:
             print 'No data section contains the boundary'
             return False
         # get index of the section which entry resides
         code_sh = self.__binary.get_section_header_by_rva(entry)
-        start_rva = code_sh.VirtualAddress + start + struct.calcsize('<I') + 10
-        code_sh.set_bytes_at_offset(start + struct.calcsize('<I'), struct.pack('<I', self.__binary.ImageBase + entry))
+        code_start = code_sh.SectionData.find(boundary)
+        start_rva = code_sh.VirtualAddress + code_start + struct.calcsize('<I') + 10
+        code_sh.set_bytes_at_offset(code_start + struct.calcsize('<I'), struct.pack('<I', self.__binary.ImageBase + entry))
 
         # modify the entry point
         self.__binary.AddressOfEntryPoint = start_rva
@@ -76,7 +76,19 @@ class Core():
         return True
 
     def __encrypt_section(self, sh, encryptor):
-        pass
+        range_data = self.__binary.get_loader_irrelvant_range(sh)
+        for rd in range_data:
+            data = sh.get_bytes_at_offset(rd[0] - sh.VirtualAddress, rd[1])
+            data = ''.join([chr(encryptor(ord(char))) for char in data])
+            sh.set_bytes_at_offset(rd[0] - sh.VirtualAddress, data)
 
-    def __write_range(self, sh, range_data):
-        return 0
+    def __write_range(self, sh, offset):
+        size = 0
+        flat_range = []
+        range_data = self.__binary.get_loader_irrelvant_range(sh)
+        for rd in range_data:
+            size += rd[1]
+            flat_range.extend([rd[0] + self.__binary.ImageBase, rd[1]])
+        data = struct.pack('< {num:d}I'.format(num=len(flat_range)), *flat_range)
+        sh.set_bytes_at_offset(offset, data)
+        return size
