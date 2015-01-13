@@ -178,6 +178,7 @@ class PE(Structure):
         fp = self.__parse_coff_header(fp)
         fp = self.__parse_optional_header(fp)
         fp = self.__parse_section_header(fp)
+
         return fp
 
     def __serialize_dos_header(self):
@@ -239,15 +240,15 @@ class PE(Structure):
             fp += section_header.SizeOfRawData
             pending_msg += ' {size:d} bytes done'.format(size=section_header.SizeOfRawData)
             self.serializeMsgs.append(pending_msg)
-        return data
+        return data, fp
 
     def serialize(self):
         data, fp = self.__serialize_dos_header()
         data, fp = self.__serialize_coff_header(data, fp)
         data, fp = self.__serialize_optional_header(data, fp)
         data, fp = self.__serialize_section_header(data, fp)
-        data = self.__serialize_section_data(data, fp)
-
+        data, fp = self.__serialize_section_data(data, fp)
+        assert fp == self.size
         return data
 
     def write(self, filename):
@@ -281,6 +282,9 @@ class PE(Structure):
         else:
             return None
 
+    def get_data_sections(self):
+        return [sh for sh in self.SectionHeaders if sh.is_data_section]
+
     def dump_modify_msgs(self):
         for msg in self.modifyMsgs:
             print msg
@@ -289,8 +293,16 @@ class PE(Structure):
         for dd in self.DataDirectories:
             dd.dump_modify_msgs()
 
-
 if __name__ == "__main__":
     pe = PE(r'C:\Users\ICT-LXB\Desktop\asm-test\hello\hello.EXE')
 
+    print pe
+
     pe.write(r'C:\Users\ICT-LXB\Desktop\asm-test\hello\tmp.EXE')
+    pe.dump_modify_msgs()
+
+    from BaseRelocationDirectory import BaseRelocationDirectory
+    ddbr = pe.DataDirectories[PE.DATA_DIRECTORY_DICT['DATA_DIRECTORY_BASE_RELOCATION']]
+    brd = BaseRelocationDirectory(ddbr)
+    brd.parse(pe.data, pe.rva2fp(ddbr.RVA))
+    print brd
