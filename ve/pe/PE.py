@@ -268,7 +268,12 @@ class PE(Structure):
         data, fp = self.__serialize_optional_header(data, fp)
         data, fp = self.__serialize_section_header(data, fp)
         data, fp = self.__serialize_section_data(data, fp)
-        assert fp == self.size
+
+        if fp > self.size:
+            for msg in self.serializeMsgs:
+                print msg
+            assert False, 'Errors occurring during Obfuscations resulted in file expansion (0x{old:x} -> 0x{new:x}'.format(old=self.size, new=fp)
+
         return data
 
     def write(self, filename):
@@ -313,15 +318,16 @@ class PE(Structure):
         for dd in self.DataDirectories:
             dd.dump_modify_msgs()
 
-    def get_loader_irrelvant_range(self, sh):
-        if sh.loaderIrrelvantRange is None:
+    def get_loader_irrelvant_range(self, sh, init_range=[]):
+        if sh.loaderIrrelvantRange is None or len(init_range) != 0:
             assert self.SectionAlignment == 0x1000, 'Section Alignment is not 0x1000'
             base_relocation_directory = self.DataDirectories[PE.DATA_DIRECTORY_DICT['DATA_DIRECTORY_BASE_RELOCATION']].info
             fixup_rva = [block.PageRVA + BaseRelocationDirectoryTableEntry.offset(item)
                          for block in base_relocation_directory.entrys if sh.VirtualAddress <= block.PageRVA < sh.VirtualAddress + sh.VirtualSize
                          for item in block.items if item != 0]
             fixup_rva.sort()
-            lirange = [[sh.VirtualAddress, sh.VirtualSize]]
+            lirange = [[sh.VirtualAddress, sh.VirtualSize]] if len(init_range) == 0 else init_range
+
             for rva in fixup_rva:
                 for i in range(len(lirange)):
                     start = lirange[i][0]
@@ -347,12 +353,13 @@ class PE(Structure):
         return sh.loaderIrrelvantRange
 
 if __name__ == "__main__":
-    pe = PE(r'C:\Users\ICT-LXB\Desktop\asm-test\hello\hello.EXE')
+    pe = PE(r'C:\Users\ICT-LXB\Desktop\asm-test\2015-src\Virus\antares\AnTaReS.exe~')
 
-    print pe
+    # print pe
 
-    pe.write(r'C:\Users\ICT-LXB\Desktop\asm-test\hello\tmp.EXE')
-    pe.dump_modify_msgs()
+    pe.write(r'C:\Users\ICT-LXB\Desktop\asm-test\2015-src\Virus\antares\tmp.exe~')
 
     print pe.DataDirectories[PE.DATA_DIRECTORY_DICT['DATA_DIRECTORY_BASE_RELOCATION']].info
     print pe.get_loader_irrelvant_range(pe.SectionHeaders[0])
+    print pe.get_loader_irrelvant_range(pe.SectionHeaders[0], [[pe.SectionHeaders[0].VirtualAddress, 100]])
+    print len(pe.get_loader_irrelvant_range(pe.SectionHeaders[0], [[pe.SectionHeaders[0].VirtualAddress, 100]]))

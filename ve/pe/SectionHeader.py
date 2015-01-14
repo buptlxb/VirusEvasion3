@@ -86,6 +86,10 @@ class SectionHeader(Structure):
     def is_data_section(self):
         return 0xC0000040 == self.Characteristics & (SectionHeader.IMAGE_SCN_MEM_WRITE | SectionHeader.IMAGE_SCN_MEM_READ | SectionHeader.IMAGE_SCN_CNT_INITIALIZED_DATA)
 
+    def is_code_section(self):
+        return 0x60000020 == self.Characteristics & (SectionHeader.IMAGE_SCN_MEM_READ | SectionHeader.IMAGE_SCN_MEM_EXECUTE | SectionHeader.IMAGE_SCN_CNT_CODE)
+
+
     def get_bytes_at_offset(self, offset, size):
         assert offset < self.SizeOfRawData, 'Offset {offset:X} exceeds {name} Section'.format(offset=offset, name=self.Name)
         return self.SectionData[offset:offset + size]
