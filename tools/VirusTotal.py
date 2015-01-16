@@ -88,6 +88,7 @@ def scan(apikey, fileHandler):
 
     response = urllib2.urlopen(request).read()
     res_json = json.loads(response)
+    print res_json['verbose_msg']
     return res_json['resource']
 
 
@@ -99,8 +100,10 @@ def report(apikey, resource):
     response = urllib2.urlopen(req)
     response_data = response.read()
     if response_data == '':
+        print 'Nothing received'
         return None
     response_json = json.loads(response_data)
     if response_json['response_code'] == 0:
+        print response_json['verbose_msg']
         return None
     return response_json
