@@ -310,6 +310,9 @@ class PE(Structure):
     def get_data_sections(self):
         return [sh for sh in self.SectionHeaders if sh.is_data_section()]
 
+    def get_code_sections(self):
+        return [sh for sh in self.SectionHeaders if sh.is_code_section()]
+
     def dump_modify_msgs(self):
         for msg in self.modifyMsgs:
             print msg

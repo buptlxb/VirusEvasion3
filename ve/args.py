@@ -24,7 +24,8 @@ class Args:
   """)
 
         parser.add_argument("-e", "--entry", action="store_true", help="Obfuscate binary entry with junk code")
-        parser.add_argument("-d", "--data", action="store_true", help="Obfuscate binary .data section")
+        # parser.add_argument("-d", "--data", action="store_true", help="Obfuscate binary .data section")
+        parser.add_argument("-d", "--data", type=int, nargs="?", help="Obfuscate binary .data section", const=0xff)
         parser.add_argument("-b", "--binary", type=str, metavar="<binary>", required=True, help="Specify a binary filename to obfuscate")
         parser.add_argument("-o", "--output", type=str, metavar="<output>", required=True, help="Specify the output file name")
         parser.add_argument("--version", action="version", version=PYVIRUSEVASION_VERSION, help="Show program's version number and exit")
