@@ -5,6 +5,7 @@ import sys
 import os
 dataSeg = """.data
 first dd  0badbeefh
+relo dd offset first
 hole dd 1024 dup (0)
 last dd 0badbeefh
 """
@@ -65,7 +66,7 @@ retCode2 = """
     pop ebp
     ret
 """
-instruction = ("add", "sub", "dec", "inc", "and", "or", "xor", "mov")
+instruction = ("add", "sub", "and", "or", "xor", "mov")
 register = ("eax", "ebx", "ecx", "edx")
 
 finishCode = """finish:
@@ -155,7 +156,7 @@ def insert_include_asm(src_asm, include_asm, output_asm):
     file = open(src_asm, 'r+')
     res_list = file.readlines()
     sep = re.search(r'[\r\n]\n?$', res_list[1], re.I | re.M)
-    include_str = "include " + include_asm + str(sep.group())
+    include_str = "include " + os.path.split(include_asm)[1] + str(sep.group())
     file.close()
     res_list.reverse()
     res_index = 0
@@ -184,7 +185,7 @@ Attention :at least the first two args are  needed
 successPromotion = """operation success!
 """
 if __name__ == "__main__":
-    #includeAsm.py  main.asm  has_data=1 255 junk_times=20 include_asm output.asm
+    # includeAsm.py  main.asm  has_data=1 255 junk_times=20 include_asm output.asm
 
     includeAsm = 'magic.asm'
     junkTimes = 50
