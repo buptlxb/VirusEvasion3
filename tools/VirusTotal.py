@@ -6,6 +6,7 @@ import mimetypes
 import urllib
 import urllib2
 import json
+import os
 
 
 class MultiPartForm(object):
@@ -72,11 +73,12 @@ class MultiPartForm(object):
         return '\r\n'.join(flattened)
 
 
-def scan(apikey, fileHandler):
+def scan(apikey, output):
+    file_handler = open(output, 'rb')
     form = MultiPartForm()
     form.add_field('apikey', apikey)
 
-    form.add_file('file', 'file.exe', fileHandler)
+    form.add_file('file', os.path.split(output)[1], file_handler)
 
     # Build the request
     request = urllib2.Request('https://www.virustotal.com/vtapi/v2/file/scan')
@@ -88,7 +90,9 @@ def scan(apikey, fileHandler):
 
     response = urllib2.urlopen(request).read()
     res_json = json.loads(response)
-    print res_json['verbose_msg']
+    if res_json['response_code'] != 1:
+        print 'SCAN FAILED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+    # print res_json['permalink']
     return res_json['resource']
 
 
@@ -100,10 +104,10 @@ def report(apikey, resource):
     response = urllib2.urlopen(req)
     response_data = response.read()
     if response_data == '':
-        print 'Nothing received'
+        # print 'Nothing received'
         return None
     response_json = json.loads(response_data)
     if response_json['response_code'] == 0:
-        print response_json['verbose_msg']
+        # print response_json['verbose_msg']
         return None
     return response_json
