@@ -152,7 +152,35 @@ def generate_junk_code(instruct_num):
     return L
 
 
+def search_and_replace_code(file_name):
+    fd = open(file_name, "r+")
+    res_list = fd.readlines()
+    fd.close()
+    for index in xrange(len(res_list)):
+        num = re.search(r'[.]code',  res_list[index], re.I | re.M)
+        if num:
+            res_list[index] = res_list[index].replace(".code", ".data")
+    fd = open(file_name, "w")
+    for lin in res_list:
+        fd.write(lin)
+    fd.close()
+
+
+def find_include(file_name):
+    fd = open(file_name, "r+")
+    res_list = fd.readlines()
+    for queue_line in res_list:
+        result = re.search(r'^(\s*)(include)(\s*)([\w*|\.]*).*$', queue_line, re.I | re.M)
+        if result:
+            include_file = result.group(4)
+            search_and_replace_code(include_file)
+            find_include(include_file)
+
+
 def insert_include_asm(src_asm, include_asm, output_asm):
+    search_and_replace_code(src_asm)
+    find_include(src_asm)
+
     file = open(src_asm, 'r+')
     res_list = file.readlines()
     sep = re.search(r'[\r\n]\n?$', res_list[1], re.I | re.M)
@@ -160,8 +188,8 @@ def insert_include_asm(src_asm, include_asm, output_asm):
     file.close()
     res_list.reverse()
     res_index = 0
-    for queuelin in res_list:
-        result = re.search(r'^(\s)*(end)(\s)+(\w)*.*$', queuelin, re.I | re.M)
+    for queue_line in res_list:
+        result = re.search(r'^(\s)*(end)(\s)+(\w)*.*$', queue_line, re.I | re.M)
         if result:
             #print result.group()
             res_list.insert(res_index+1, include_str)
