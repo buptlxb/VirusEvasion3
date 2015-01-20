@@ -62,6 +62,11 @@ startCode1 = """
     mov ebp, esp
 """
 retCode2 = """
+    xor ecx, ecx
+    dec ecx
+loooooooop:
+    dec ecx
+    jne loooooooop
     mov esp, ebp
     pop ebp
     ret
@@ -173,8 +178,8 @@ def find_include(file_name):
         result = re.search(r'^(\s*)(include)(\s*)([\w*|\.]*).*$', queue_line, re.I | re.M)
         if result:
             include_file = result.group(4)
-            search_and_replace_code(include_file)
-            find_include(include_file)
+            search_and_replace_code(os.path.join(os.path.dirname(file_name), include_file))
+            find_include(os.path.join(os.path.dirname(file_name), include_file))
 
 
 def insert_include_asm(src_asm, include_asm, output_asm):

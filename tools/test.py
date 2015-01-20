@@ -8,7 +8,7 @@ root = r'D:\Virus-2015-01-16'
 sasm = [r'analbeeds\AnalBeeds.ASM', r'antares\AnTaReS.asm', r'babylonia\babylon.asm', r'blackbat\blackbat.asm',
         r'blackhand\blackhand.asm', r'boundary\BOUNDARY.ASM', r'charm\CHARM.ASM', r'chthon\chthon.asm',
         r'cjdisease\cjdisease.ASM', r'dammit\DAM.ASM']
-salt = 44
+salt = 0x03
 junk_times = 100
 
 resources = []
