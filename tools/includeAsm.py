@@ -80,7 +80,7 @@ finishCode = """finish:
 
 
 def deal_data_address(data_addr):
-    addr = hex(data_addr)[2:]
+    addr = '{0:02x}'.format(data_addr)
 
     eax_addr = "0" + addr*4 + "h"
     al_addr = "0" + addr + "h"

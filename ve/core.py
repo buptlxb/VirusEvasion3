@@ -79,6 +79,7 @@ class Core():
 
         # get index of the section which entry resides
         code_shs = self.__binary.get_code_sections()
+        assert len(code_shs) == 1, 'PE has two code sections!'
         for code_sh in code_shs:
             code_start = code_sh.SectionData.find(boundary)
             # adjust junk code to return to the original entry if ordinal is zero
@@ -87,7 +88,8 @@ class Core():
                 code_sh.set_bytes_at_offset(code_start + struct.calcsize('<I'), struct.pack('<I', self.__binary.ImageBase + entry))
                 # modify the entry point
                 self.__binary.AddressOfEntryPoint = start_rva
-
+        # disable NX compatible
+        self.__binary.DLLCharacteristics &= ~pe.PE.DLL_CHARACTERISTICS_NX_COMPAT
         ordinal[0] += 1
         print '\t[*] PE data(0x{0:x}) obfuscation completed.'.format(data_size)
         return True

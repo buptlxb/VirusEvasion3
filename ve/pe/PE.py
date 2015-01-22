@@ -11,7 +11,6 @@ from DataDirectory import DataDirectory
 from BaseRelocationDirectory import BaseRelocationDirectoryTableEntry
 
 
-
 class PE(Structure):
     data_directory_types = [
         ('DATA_DIRECTORY_EXPORT', 0),
@@ -38,6 +37,12 @@ class PE(Structure):
     OPTIONAL_HEADER_FORMAT = '< H 2B 9I 6H 4I 2H 6I'
 
     FILE_OFFSET_TO_PE_SIGNATURE = 0x3c
+
+    DLL_CHARACTERISTICS_DYNAMIC_BASE = 0x0040
+    DLL_CHARACTERISTICS_FORCE_INTEGRITY = 0x0080
+    DLL_CHARACTERISTICS_NX_COMPAT = 0x0100
+    DLL_CHARACTERISTICS_NO_ISOLATION = 0x0200
+    DLL_CHARACTERISTICS_NO_SEH = 0x0400
 
     def __init__(self, filename):
         Structure.__init__(self)
