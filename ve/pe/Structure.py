@@ -6,7 +6,7 @@ class Structure:
 
     def is_all_zero(self):
         for attr in self.majorAttributes:
-            if getattr(attr, None):
+            if getattr(self, attr, None):
                 return False
         else:
             return True

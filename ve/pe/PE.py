@@ -162,10 +162,12 @@ class PE(Structure):
         size = struct.calcsize(PE.OPTIONAL_HEADER_FORMAT)
         fp += size
 
-        class_names = {PE.DATA_DIRECTORY_DICT['DATA_DIRECTORY_BASE_RELOCATION']: 'BaseRelocationDirectory'}
+        class_names = {PE.DATA_DIRECTORY_DICT['DATA_DIRECTORY_BASE_RELOCATION']: 'BaseRelocationDirectory',
+                       PE.DATA_DIRECTORY_DICT['DATA_DIRECTORY_IMPORT']: 'ImportDirectory'}
+        # class_names = {PE.DATA_DIRECTORY_DICT['DATA_DIRECTORY_BASE_RELOCATION']: 'BaseRelocationDirectory'}
         for i in range(self.NumberOfRvaAndSizes):
             data_directory = DataDirectory()
-            fp = data_directory.parse(self.data, fp)
+            fp = data_directory.parse(self, fp)
             class_name = class_names.get(i, None)
             if class_name is not None:
                 m = importlib.import_module('ve.pe.{0}'.format(class_name))
@@ -181,7 +183,7 @@ class PE(Structure):
         pending_msg = 'Parsing {num:d} Section Headers from 0x{fp:x} ... '.format(num=self.NumberOfSections, fp=fp)
         for i in range(self.NumberOfSections):
             section_header = SectionHeader()
-            fp = section_header.parse(self.data, fp)
+            fp = section_header.parse(self, fp)
             self.SectionHeaders.append(section_header)
         pending_msg += '{size:d}*{num:d} bytes done'.format(size=struct.calcsize(SectionHeader.SECTION_HEADER_FORMAT), num=self.NumberOfSections)
         self.parseMsgs.append(pending_msg)
@@ -193,7 +195,7 @@ class PE(Structure):
             for dd in section_header.dataDirectories:
                 dd.section = section_header
                 if dd.info is not None:
-                    dd.info.parse(self.data, self.rva2fp(dd.RVA))
+                    dd.info.parse(self, self.rva2fp(dd.RVA))
 
     def parse(self):
         # base parser
@@ -371,3 +373,5 @@ if __name__ == "__main__":
     print pe.get_loader_irrelvant_range(pe.SectionHeaders[0])
     print pe.get_loader_irrelvant_range(pe.SectionHeaders[0], [[pe.SectionHeaders[0].VirtualAddress, 100]])
     print len(pe.get_loader_irrelvant_range(pe.SectionHeaders[0], [[pe.SectionHeaders[0].VirtualAddress, 100]]))
+    # print pe.DataDirectories
+    print pe.DataDirectories[PE.DATA_DIRECTORY_DICT['DATA_DIRECTORY_IMPORT']].info

@@ -63,7 +63,8 @@ class SectionHeader(Structure):
         self.dataDirectories = None
         self.loaderIrrelvantRange = None
 
-    def parse(self, data, fp):
+    def parse(self, pe, fp):
+        data = pe.data
         (self.Name, self.VirtualSize, self.VirtualAddress, self.SizeOfRawData, self.PointerToRawData, self.PointerToRelocations, self.PointerToLinenumbers,
          self.NumberOfRelocations, self.NumberOfLinenumbers, self.Characteristics) = struct.unpack_from(SectionHeader.SECTION_HEADER_FORMAT, data, fp)
         fp += struct.calcsize(SectionHeader.SECTION_HEADER_FORMAT)
@@ -88,7 +89,6 @@ class SectionHeader(Structure):
 
     def is_code_section(self):
         return 0x60000020 == self.Characteristics & (SectionHeader.IMAGE_SCN_MEM_READ | SectionHeader.IMAGE_SCN_MEM_EXECUTE | SectionHeader.IMAGE_SCN_CNT_CODE)
-
 
     def get_bytes_at_offset(self, offset, size):
         assert offset < self.SizeOfRawData, 'Offset {offset:X} exceeds {name} Section'.format(offset=offset, name=self.Name)

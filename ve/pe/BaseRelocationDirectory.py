@@ -54,7 +54,8 @@ class BaseRelocationDirectory(Structure):
         self.entrys = []
         self.data_directory = data_directory
 
-    def parse(self, data, fp):
+    def parse(self, pe, fp):
+        data = pe.data
         end_fp = fp + self.data_directory.Size
         while fp < end_fp:
             brdte = BaseRelocationDirectoryTableEntry()
