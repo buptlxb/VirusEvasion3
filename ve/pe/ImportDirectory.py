@@ -111,7 +111,6 @@ class ImportDirectoryTableEntry(Structure):
         if self.NameRVA:
             size = struct.calcsize('< s')
             name = []
-            print hex(self.NameRVA)
             sub_fp = pe.rva2fp(self.NameRVA)
             while True:
                 (char, ) = struct.unpack_from('< s', data, sub_fp)
